@@ -21,7 +21,6 @@ jobs:
 
       - name: Build and Run Frontend Tests inside Docker
         run: |
-          cd frontend
           docker build -t fluxora-fe-test -f Dockerfile.test .
           docker run --rm fluxora-fe-test
 
