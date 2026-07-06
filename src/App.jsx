@@ -31,22 +31,7 @@ import MilestoneDetail from './devlaunch/MilestoneDetail';
 import StartupDashboard from './devlaunch/StartupDashboard';
 import DevDashboard from './devlaunch/DevDashboard';
 import ProjectDetail from './devlaunch/ProjectDetail';
-import { supabase } from './utils/supabase'
-
 function App() {
-  const [todos, setTodos] = useState([]);
-
-  useEffect(() => {
-    async function getTodos() {
-      const { data: todos } = await supabase.from('todos').select()
-
-      if (todos) {
-        setTodos(todos)
-      }
-    }
-
-    getTodos()
-  }, []);
   return (
     <BrowserRouter>
       <ToastContainer
