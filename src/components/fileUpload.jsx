@@ -29,7 +29,8 @@ const FileUpload = ({ onUploadSuccess }) => {
         const formData = new FormData();
         formData.append("file", selectedFile);
 
-        axios.post("http://localhost:5000/upload", formData, {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      axios.post(`${backendUrl}/upload`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data"
             }

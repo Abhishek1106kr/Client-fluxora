@@ -51,12 +51,14 @@ function Login() {
     }
   }
 
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
   const handleGoogleLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/google";
+    window.location.href = `${backendUrl}/api/auth/google`;
   };
 
   const handleGithubLogin = () => {
-    window.location.href = "http://localhost:5000/api/auth/github";
+    window.location.href = `${backendUrl}/api/auth/github`;
   };
   return (
     <div className="min-h-screen flex items-center justify-center bg-zinc-950 px-4 relative overflow-hidden font-inter text-zinc-100">
