@@ -88,7 +88,7 @@ const EventsSection = () => {
   const [events, setEvents] = useState([]);
   const navigate = useNavigate();
   const { backendUrl } = useContext(AppContext);
-  const base = backendUrl || "http://localhost:5000";
+  const base = backendUrl || "http://localhost:5002";
 
   useEffect(() => {
     // Try the new unified dashboard endpoint first; fall back to legacy endpoint

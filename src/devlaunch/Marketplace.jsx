@@ -69,7 +69,7 @@ export default function Marketplace() {
           <p className="text-zinc-400 text-sm mt-1">Find scoped milestones from early-stage startups</p>
         </div>
         {role === "startup" && (
-          <Button variant="primary" onClick={() => navigate("/devlaunch/startup")} icon={Zap}>
+          <Button variant="primary" onClick={() => navigate("/startup/dashboard")} icon={Zap}>
             Manage Projects
           </Button>
         )}

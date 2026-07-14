@@ -53,10 +53,14 @@ export default function StartupLogin() {
         const payload = { email, password };
         const res = await axios.post(`${backendUrl}/api/auth/login`, payload);
         if (res.data.success) {
+          if (res.data.token) {
+            localStorage.setItem("token", res.data.token);
+            localStorage.setItem("authToken", res.data.token);
+          }
           setIsLoggedIn(true);
           await getUserData();
           toast.success("Logged in successfully as Startup!");
-          navigate("/devlaunch/startup");
+          navigate("/startup/dashboard");
         } else {
           setErrorMessage(res.data.message || "Login failed.");
         }

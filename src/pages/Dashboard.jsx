@@ -3,7 +3,6 @@ import {
   User, 
   Rocket, 
   LogOut, 
-  Settings, 
   Award, 
   FileText, 
   Plus, 
@@ -39,6 +38,9 @@ import { toast } from "react-toastify";
 import { AppContext } from "../context/AppContext";
 import developerHeroImg from "../assets/dashboard_eng.jpg.png";
 import FileUpload from "../components/fileUpload";
+import ActiveWorkSpace from "../components/ActiveWorkSpace";
+import StartupDashboard from "./StartupDashboard";
+import Chatbot from "../components/Chatbot";
 
 const SKILL_OPTIONS = [
   "React",
@@ -53,87 +55,222 @@ const SKILL_OPTIONS = [
   "Machine Learning",
   "SQL",
 ];
+const AVAILABLE_ROLES = [
+  // Core Development & Full Stack
+  "Full-Stack Developer",
+  "Backend Developer (Node.js)",
+  "Backend Developer (Python)",
+  "Backend Developer (Go / Java)",
+  "Frontend Engineer (React / Next.js)",
+  "Frontend Engineer (Vue / Angular)",
+  
+  // Mobile Development
+  "Mobile App Developer (React Native)",
+  "Mobile App Developer (Flutter)",
+  "iOS Engineer (Swift)",
+  "Android Engineer (Kotlin)",
 
-const ANALYTICS_DATA = [
-  { name: "Revenue", value: "$45,231.89", change: "+20.1% from last month", trend: "up", color: "#2563EB", points: [30, 45, 35, 50, 40, 60, 55, 70] },
-  { name: "Active Projects", value: "12", change: "+2 new this week", trend: "up", color: "#7C3AED", points: [10, 8, 12, 11, 13, 12, 14, 12] },
-  { name: "Deployments", value: "249", change: "99.8% success rate", trend: "up", color: "#22C55E", points: [120, 140, 110, 160, 180, 210, 230, 249] },
-  { name: "Contributors", value: "8", change: "+1 joined recently", trend: "up", color: "#3B82F6", points: [4, 5, 5, 6, 6, 7, 7, 8] },
-  { name: "Storage Used", value: "4.2 GB / 10 GB", change: "42.0% capacity", trend: "neutral", color: "#F59E0B", points: [2.1, 2.5, 2.9, 3.2, 3.6, 3.8, 4.0, 4.2] },
- 
+  // DevOps, Infrastructure, & Systems
+  "DevOps Engineer",
+  "Site Reliability Engineer (SRE)",
+  "Cloud Infrastructure Architect (AWS/GCP)",
+  "Systems Engineer",
+  "Database Administrator (DBA)",
+
+  // AI, Machine Learning, & Advanced Tech
+  "Machine Learning Engineer",
+  "Data Scientist",
+  "AI Prompt Engineer & Agent Architect",
+  "NLP Engineer",
+  "Computer Vision Engineer",
+  "Quantum Computing Developer",
+  "Data Engineer",
+
+  // Cybersecurity & Networks
+  "Cybersecurity Analyst",
+  "Penetration Tester / Ethical Hacker",
+  "Security Engineer (DevSecOps)",
+
+  // Web3 & Blockchain
+  "Blockchain Developer (Solidity)",
+  "Smart Contract Auditor",
+
+  // Design, Product, & Quality Assurance
+  "UI/UX Designer",
+  "Product Designer",
+  "Product Manager",
+  "QA Automation Engineer",
+  "Manual Test Engineer",
+  "Technical Writer"
 ];
-
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { userData, isLoggedIn, setIsLoggedIn, setUserData } = useContext(AppContext);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { backendUrl, userData, isLoggedIn, setIsLoggedIn, setUserData, theme, toggleTheme } = useContext(AppContext);
+  const isDarkMode = theme === "dark";
+  const base = backendUrl || "http://localhost:5002";
+  const token = localStorage.getItem("token");
 
   // Profile state with default fallbacks
   const [profile, setProfile] = useState({
     name: userData?.name || "Developer",
     email: userData?.email || "developer@fluxora.io",
-    bio:userData?.bio || "Full Stack Engineer passionate about constructing high-performance modern web applications.",
-    location:userData?.location||  "NA",
-    github: userData?.github||"NA",
-    linkedin: "linkedin.com/in/developer",
-    avatar: "",
-    motivation: "I love building scalable web apps and premium UI layouts that wow users.",
-    skills: ["React", "Node.js", "MongoDB", "UI/UX"],
+    bio: userData?.bio || "Full Stack Engineer passionate about constructing high-performance modern web applications.",
+    location: userData?.location || "NA",
+    github: userData?.github || "NA",
+    linkedin: userData?.linkedin || "linkedin.com/in/developer",
+    avatar: userData?.avatar || "",
+    motivation: userData?.motivation || "I love building scalable web apps and premium UI layouts that wow users.",
+    skills: userData?.skills || ["React", "Node.js", "MongoDB", "UI/UX"],
     careerGoals: "In 2 years, I want to lead frontend teams and architect enterprise cloud systems.",
     dreamCompany: "Vercel / Stripe",
     favoriteProject: "Fluxora Dashboard Canvas",
-    certificates: [
-      { name: "AWS Developer Associate", url: "https://credly.com/aws-assoc" },
-      { name: "React Advanced Core", url: "https://scrimba.com/react-adv" }
-    ],
-    resume: "https://drive.google.com/resume"
+   
+    resume: userData?.resume || "",
+    aspiration: userData?.aspiration || ""
   });
 
   // UI state
-  const [editMode, setEditMode] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [form, setForm] = useState({ ...profile });
   const [showCertForm, setShowCertForm] = useState(false);
   const [certForm, setCertForm] = useState({ name: "", url: "" });
   const [showResumeUpload, setShowResumeUpload] = useState(false);
+  const [showAvatarUpload, setShowAvatarUpload] = useState(false);
+
+  const [activeWorkspaces, setActiveWorkspaces] = useState([]);
+  const [selectedWorkspaceId, setSelectedWorkspaceId] = useState(null);
+  const [loadingWorkspaces, setLoadingWorkspaces] = useState(false);
+  const [selectedRoles, setSelectedRoles]=useState([]);
+
+  const fetchWorkspaces = async () => {
+    setLoadingWorkspaces(true);
+    try {
+      const res = await fetch(`${base}/api/projectcard/student/workspaces`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+      const d = await res.json();
+      if (res.ok && d.success) {
+        if (!d.data || d.data.length === 0) {
+          setActiveWorkspaces([
+            {
+              _id: "demo-workspace-123",
+              title: "AI-Powered Technical Resume Reviewer",
+              description: "Implement an interactive, AI-driven platform that automatically parses developer resumes, scores them against target jobs, and offers tailored suggestions using the Gemini API.",
+              stipend: "$2000 / Month",
+              duration: "10 Weeks",
+              repositoryUrl: "https://github.com/fluxora/ai-resume-optimizer",
+              state: {
+                id: "demo-state-123",
+                milestones: [
+                  {
+                    id: "m1",
+                    title: "Backend API Setup",
+                    description: "Initialize Express, connect mongoose database models, and write mock endpoints.",
+                    status: "MERGED",
+                    prNumber: 1
+                  },
+                  {
+                    id: "m2",
+                    title: "Gemini Integration",
+                    description: "Integrate Google Gen AI SDK and construct evaluation system prompts.",
+                    status: "UNDER_REVIEW",
+                    prNumber: 2
+                  },
+                  {
+                    id: "m3",
+                    title: "Resume File Parser",
+                    description: "Write resume text extraction service from pdf and docx files.",
+                    status: "PENDING",
+                    prNumber: null
+                  }
+                ]
+              },
+              startupId: {
+                companyName: "Acme Startup Labs",
+                avatar: "https://randomuser.me/api/portraits/lego/2.jpg"
+              }
+            }
+          ]);
+        } else {
+          setActiveWorkspaces(d.data);
+        }
+      }
+    } catch (err) {
+      console.error("Error loading student workspaces:", err);
+    } finally {
+      setLoadingWorkspaces(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "workspaces" && userData) {
+      fetchWorkspaces();
+    }
+  }, [activeTab, userData]);
+
+  // Redirect if not logged in
+  useEffect(() => {
+    if (!token && !isLoggedIn) {
+      navigate("/login");
+    }
+  }, [token, isLoggedIn, navigate]);
 
   // Sync profile details with AppContext when userData loads
   useEffect(() => {
     if (userData) {
-      setProfile(prev => ({
-        ...prev,
-        name: userData.name,
-        email: userData.email
-      }));
-      setForm(prev => ({
-        ...prev,
-        name: userData.name,
-        email: userData.email
-      }));
+      const synced = {
+        name: userData.name || "Developer",
+        email: userData.email || "",
+        bio: userData.bio || "Full Stack Engineer passionate about constructing high-performance modern web applications.",
+        location: userData.location || "NA",
+        github: userData.github || "NA",
+        linkedin: userData.linkedin || "linkedin.com/in/developer",
+        avatar: userData.avatar || "",
+        motivation: userData.motivation || "I love building scalable web apps and premium UI layouts that wow users.",
+        skills: userData.skills || ["React", "Node.js", "MongoDB", "UI/UX"],
+        careerGoals: "In 2 years, I want to lead frontend teams and architect enterprise cloud systems.",
+        dreamCompany: "Vercel / Stripe",
+        favoriteProject: "Fluxora Dashboard Canvas",
+      
+        resume: userData.resume || "",
+        aspiration: userData.aspiration || ""
+      };
+      setProfile(synced);
+      setForm(synced);
     }
   }, [userData]);
 
-  // Load from localStorage on mount for persistence
-  useEffect(() => {
-    const saved = localStorage.getItem("dev_profile");
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (userData) {
-          parsed.name = userData.name;
-          parsed.email = userData.email;
-        }
-        setProfile(parsed);
-        setForm(parsed);
-      } catch (e) {
-        console.error("Failed to parse saved profile:", e);
-      }
-    }
-  }, [userData]);
-
-  const saveProfile = (newProfile) => {
+  const saveProfile = async (newProfile) => {
     setProfile(newProfile);
     localStorage.setItem("dev_profile", JSON.stringify(newProfile));
+
+    try {
+      const res = await fetch(`${base}/api/user/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          name: newProfile.name,
+          bio: newProfile.bio,
+          location: newProfile.location,
+          github: newProfile.github,
+          linkedin: newProfile.linkedin,
+          skills: newProfile.skills,
+          motivation: newProfile.motivation,
+          avatar: newProfile.avatar,
+          resume: newProfile.resume,
+          aspiration: newProfile.aspiration
+        })
+      });
+      const d = await res.json();
+      if (res.ok && d.success) {
+        setUserData(d.user);
+      }
+    } catch (err) {
+      console.error("Backend profile sync failed:", err);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -143,8 +280,7 @@ export default function Dashboard() {
   const handleSaveGeneral = (e) => {
     e.preventDefault();
     saveProfile(form);
-    setEditMode(false);
-    toast.success("Profile updated successfully!");
+    toast.success("Profile details saved successfully!");
   };
 
   const handleSkillToggle = (skill) => {
@@ -196,6 +332,19 @@ export default function Dashboard() {
     toast.success("Portfolio link copied to clipboard!");
   };
 
+  // Render check for startup role
+  if (!userData) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-950 text-slate-100">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (userData.role === "startup") {
+    return <StartupDashboard />;
+  }
+
   return (
     <div className={`min-h-screen font-inter antialiased transition-colors duration-300 ${
       isDarkMode ? "bg-slate-950 text-slate-100" : "bg-[#F8FAFC] text-slate-900"
@@ -226,14 +375,18 @@ export default function Dashboard() {
             {/* Nav */}
             <nav className="flex flex-col gap-1.5">
               {[
-                { id: "overview", label: "Overview", icon: Layers },
-                { id: "analytics", label: "Analytics Space", icon: Activity },
-                { id: "credentials", label: "Qualifications", icon: Award },
-                { id: "profile", label: "Profile Settings", icon: User }
+                { id: "overview", label: "Profile Card", icon: User },
+                { id: "edit", label: "Edit Profile", icon: Edit2 },
+                { id: "resume", label: "Resume & Credentials", icon: FileText },
+                { id: "aspirations", label: "Career Aspirations", icon: Sparkles },
+                { id: "workspaces", label: "My Collaborations", icon: Cpu }
               ].map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    setSelectedWorkspaceId(null);
+                  }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 ${
                     activeTab === tab.id
                       ? "bg-blue-600 text-white shadow-lg shadow-blue-600/10"
@@ -255,11 +408,8 @@ export default function Dashboard() {
             <div className={`p-4 rounded-xl border ${
               isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
             }`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">Subscription</span>
-                <span className="text-[9px] px-1.5 py-0.5 rounded-full font-bold bg-green-500/10 text-green-500 border border-green-500/20">Pro Tier</span>
-              </div>
-              <p className="text-xs font-semibold">Enterprise Sandbox</p>
+             
+              <p className="text-xs font-semibold">Workspace Portfolio</p>
             </div>
 
             <button 
@@ -267,7 +417,7 @@ export default function Dashboard() {
               className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-semibold border transition-all duration-200 ${
                 isDarkMode 
                   ? "border-slate-800 bg-slate-950 text-slate-400 hover:text-white hover:bg-slate-900"
-                  : "border-slate-200 bg-white text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+                  : "border-slate-200 bg-white text-slate-650 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
               <LogOut size={16} />
@@ -284,27 +434,22 @@ export default function Dashboard() {
             isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white/80"
           } backdrop-blur-md sticky top-0 z-30`}>
             
-            {/* Search Input */}
-            <div className="relative max-w-md w-full hidden md:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
-                type="text"
-                placeholder="Search projects, deployments, resources..."
-                className={`w-full h-11 pl-10 pr-4 rounded-xl border text-sm outline-none transition-all ${
-                  isDarkMode 
-                    ? "bg-slate-900 border-slate-800 text-white placeholder:text-slate-600 focus:border-blue-500" 
-                    : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-600"
-                }`}
-              />
+            {/* Title display */}
+            <div>
+              <h1 className="text-lg font-bold font-outfit text-slate-800 dark:text-zinc-50 flex items-center gap-2">
+                <User size={18} className="text-blue-600" />
+                Student Profile Space
+              </h1>
+              <p className="text-[10px] text-slate-505">Manage your skills, certifications, resume and aspirations</p>
             </div>
             
             {/* Action Group */}
-            <div className="flex items-center gap-3 ml-auto md:ml-0">
+            <div className="flex items-center gap-3">
               {/* Dark Mode Toggle */}
               <button 
-                onClick={() => setIsDarkMode(!isDarkMode)}
+                onClick={toggleTheme}
                 className={`p-2.5 rounded-xl border transition-colors ${
-                  isDarkMode ? "bg-slate-900 border-slate-800 text-yellow-400" : "bg-white border-slate-200 text-slate-600"
+                  isDarkMode ? "bg-slate-900 border-slate-800 text-yellow-400" : "bg-white border-slate-200 text-slate-650"
                 }`}
                 title="Toggle Mode"
               >
@@ -314,7 +459,7 @@ export default function Dashboard() {
               {/* Notification Badge */}
               <button 
                 className={`p-2.5 rounded-xl border transition-colors relative ${
-                  isDarkMode ? "bg-slate-900 border-slate-800 text-slate-300" : "bg-white border-slate-200 text-slate-600"
+                  isDarkMode ? "bg-slate-900 border-slate-800 text-slate-350" : "bg-white border-slate-200 text-slate-650"
                 }`}
               >
                 <Bell size={18} />
@@ -323,447 +468,415 @@ export default function Dashboard() {
 
               {/* Mini User Tag */}
               <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-slate-800">
-                <div className="w-9 h-9 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center text-blue-600 font-bold text-sm">
-                  {profile.name.charAt(0)}
-                </div>
-                <div className="hidden sm:block text-left">
-                  <p className="text-xs font-bold leading-tight">{profile.name}</p>
-                  <p className="text-[10px] text-slate-500 leading-none">{profile.email}</p>
-                </div>
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt="Avatar" className="w-9 h-9 rounded-full object-cover border border-blue-605/20" />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-blue-650/10 border border-blue-600/20 flex items-center justify-center text-blue-600 font-bold text-sm">
+                    {profile.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+               
               </div>
             </div>
           </header>
 
-          {/* MAIN CONTENT SPACE (Responsive 12-Column Grid) */}
+          {/* MAIN CONTENT SPACE */}
           <main className="flex-1 p-6 md:p-8 space-y-8 overflow-y-auto">
             
-            {/* HERO BANNER SECTION (Premium Developer Backdrop) */}
-            <section className={`relative rounded-3xl border overflow-hidden transition-all duration-300 p-8 md:p-10 flex flex-col justify-between min-h-[380px] ${
-              isDarkMode 
-                ? "bg-slate-900/60 border-slate-800 shadow-2xl" 
-                : "bg-white border-slate-200 shadow-xl shadow-slate-100/50"
-            }`}>
-              
-              {/* Blur gradient glow specifically on the hero */}
-              <div className="absolute top-0 right-0 w-[400px] h-[100%] bg-gradient-to-l from-blue-500/10 to-transparent pointer-events-none z-0" />
-              
-              {/* Developer Cutout Image Overlay (Right Aligned, Masked Blend) */}
-              <div className="absolute bottom-0 right-0 w-full md:w-1/2 h-[80%] md:h-[95%] pointer-events-none z-10 hidden md:block overflow-hidden">
-                <div className="w-full h-full relative">
-                  <img 
-                    src={developerHeroImg} 
-                    alt="Workspace Developers Layout Reference" 
-                    className="w-full h-full object-contain object-bottom select-none drop-shadow-[0_8px_24px_rgba(37,99,235,0.15)]"
-                  />
-                  {/* Radial Fade Overlay */}
-                  <div className={`absolute inset-0 bg-gradient-to-t via-transparent to-transparent ${
-                    isDarkMode ? "from-slate-900" : "from-white"
-                  }`} />
-                  <div className={`absolute inset-y-0 left-0 w-1/3 bg-gradient-to-r ${
-                    isDarkMode ? "from-slate-900" : "from-white"
-                  }`} />
-                </div>
-              </div>
-
-              {/* Hero Context Area */}
-              <div className="relative z-20 max-w-xl flex flex-col justify-between h-full gap-8">
-                <div>
-                  {/* Status Pills */}
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold mb-4 bg-blue-600/10 text-blue-600 border border-blue-600/20">
-                    <Sparkles size={12} />
-                    <span>Workspace Dashboard Canvas</span>
-                  </div>
-
-                  <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight leading-tight font-outfit mb-4">
-                    Architecting the <span className="text-blue-600 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Future</span> of Code
-                  </h2>
-
-                  <p className={`text-sm md:text-base leading-relaxed ${
-                    isDarkMode ? "text-slate-400" : "text-slate-600"
-                  }`}>
-                    Manage, compile, and deploy enterprise applications instantly. Attach your developer resume details or connect strategies for direct visual feedback.
-                  </p>
-                </div>
-
-                {/* Hero CTAs */}
-                <div className="flex flex-wrap items-center gap-3">
-                  <button 
-                    onClick={() => setActiveTab("profile")}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]"
-                  >
-                    Configure Profile
-                  </button>
-                  <button 
-                    onClick={handleShare}
-                    className={`px-5 py-3 border font-semibold text-sm rounded-xl transition-colors active:scale-[0.98] ${
-                      isDarkMode 
-                        ? "border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-900" 
-                        : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
-                    }`}
-                  >
-                    Share Workspace
-                  </button>
-                </div>
-              </div>
-            </section>
-
             {/* CONDITIONAL RENDER BY ACTIVE TABS */}
-            
+
+            {/* TAB 1: PROFILE OVERVIEW (Portfolio Card) */}
             {activeTab === "overview" && (
-              <>
-                {/* 1. ANALYTICS SPACE (6 Metric Cards Grid) */}
-                <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {ANALYTICS_DATA.map((item, idx) => (
-                    <div 
-                      key={idx}
-                      className={`p-6 rounded-2xl border transition-all duration-300 flex flex-col justify-between min-h-[160px] ${
-                        isDarkMode 
-                          ? "bg-slate-900/40 border-slate-800/80 hover:border-slate-700" 
-                          : "bg-white border-slate-200/80 hover:border-blue-200 shadow-sm shadow-slate-100"
-                      }`}
-                    >
-                      <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className={`text-xs font-bold uppercase tracking-wider ${
-                            isDarkMode ? "text-slate-500" : "text-slate-400"
-                          }`}>{item.name}</span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold ${
-                            item.trend === "up" 
-                              ? "bg-green-500/10 text-green-500" 
-                              : item.trend === "warning" 
-                              ? "bg-red-500/10 text-red-500" 
-                              : "bg-amber-500/10 text-amber-500"
-                          }`}>{item.change}</span>
-                        </div>
-                        <h3 className="text-2xl font-bold font-outfit">{item.value}</h3>
+              <div className="space-y-6 animate-in fade-in duration-300">
+                
+                {/* Hero Banner Grid Card */}
+                <div className={`p-8 rounded-3xl border overflow-hidden relative ${
+                  isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
+                }`}>
+                  <div className="absolute top-0 right-0 w-[400px] h-full bg-gradient-to-l from-blue-600/5 to-transparent pointer-events-none z-0" />
+                  
+                  <div className="flex flex-col md:flex-row gap-8 items-center md:items-start relative z-10">
+                    
+                    {/* Avatar Container */}
+                    <div className="relative group">
+                      <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-blue-600 to-purple-600 p-[3px] shadow-xl">
+                        {profile.avatar ? (
+                          <img src={profile.avatar} alt="Profile Avatar" className="w-full h-full object-cover rounded-full bg-slate-900" />
+                        ) : (
+                          <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center text-slate-200 font-extrabold text-4xl">
+                            {profile.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                       </div>
-
-                      {/* Sparkline Canvas (SVG Path representation) */}
-                      <div className="w-full h-10 mt-3 overflow-hidden">
-                        <svg className="w-full h-full" viewBox="0 0 100 30" preserveAspectRatio="none">
-                          <path
-                            d={`M 0 ${30 - item.points[0]} L 14 ${30 - item.points[1]} L 28 ${30 - item.points[2]} L 42 ${30 - item.points[3]} L 56 ${30 - item.points[4]} L 70 ${30 - item.points[5]} L 84 ${30 - item.points[6]} L 100 ${30 - item.points[7]}`}
-                            fill="none"
-                            stroke={item.color}
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                          <path
-                            d={`M 0 30 L 0 ${30 - item.points[0]} L 14 ${30 - item.points[1]} L 28 ${30 - item.points[2]} L 42 ${30 - item.points[3]} L 56 ${30 - item.points[4]} L 70 ${30 - item.points[5]} L 84 ${30 - item.points[6]} L 100 ${30 - item.points[7]} L 100 30 Z`}
-                            fill={`url(#gradient-${idx})`}
-                          />
-                          <defs>
-                            <linearGradient id={`gradient-${idx}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="0%" stopColor={item.color} stopOpacity="0.2"/>
-                              <stop offset="100%" stopColor={item.color} stopOpacity="0"/>
-                            </linearGradient>
-                          </defs>
-                        </svg>
-                      </div>
+                      
+                      <button 
+                        onClick={() => setActiveTab("edit")} 
+                        className="absolute bottom-1 right-1 p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg transition-transform hover:scale-105 active:scale-95"
+                        title="Upload Avatar"
+                      >
+                        <Edit2 size={14} />
+                      </button>
                     </div>
-                  ))}
-                </section>
 
-                {/* 2. CHARTS AREA (Performance & Analytics Split Columns) */}
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  {/* Performance Chart (Left Col - Spans 2) */}
-                  <div className={`p-6 rounded-2xl border lg:col-span-2 flex flex-col justify-between ${
+                    {/* Basic Info Area */}
+                    <div className="flex-1 text-center md:text-left space-y-3">
+                      <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
+                        <h2 className="text-3xl font-extrabold font-outfit text-slate-900 dark:text-white leading-tight">
+                          {profile.name}
+                        </h2>
+                        {profile.aspiration && (
+                          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-blue-600/10 text-blue-500 border border-blue-600/20 animate-pulse">
+                            {profile.aspiration}
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-slate-500 dark:text-slate-400 text-sm max-w-2xl leading-relaxed">
+                        {profile.bio}
+                      </p>
+
+                      <div className="flex flex-wrap items-center justify-center md:justify-start gap-x-6 gap-y-2 text-xs text-slate-500 font-semibold pt-1">
+                        <span className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-green-500" />
+                          {profile.email}
+                        </span>
+                        {profile.location && profile.location !== "NA" && (
+                          <span>📍 {profile.location}</span>
+                        )}
+                      </div>
+
+                      {/* Social/Career Button Row */}
+                      <div className="flex flex-wrap items-center justify-center md:justify-start gap-3 pt-3">
+                        {profile.github && profile.github !== "NA" && (
+                          <a 
+                            href={profile.github.startsWith("http") ? profile.github : `https://${profile.github}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className={`px-4 py-2 border rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
+                              isDarkMode ? "border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-900" : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                            }`}
+                          >
+                            GitHub
+                          </a>
+                        )}
+                        {profile.linkedin && profile.linkedin !== "NA" && (
+                          <a 
+                            href={profile.linkedin.startsWith("http") ? profile.linkedin : `https://${profile.linkedin}`} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className={`px-4 py-2 border rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
+                              isDarkMode ? "border-slate-800 bg-slate-950 text-slate-300 hover:bg-slate-900" : "border-slate-200 bg-white text-slate-650 hover:bg-slate-50"
+                            }`}
+                          >
+                            LinkedIn
+                          </a>
+                        )}
+
+                        {profile.resume ? (
+                          <a 
+                            href={profile.resume} 
+                            target="_blank" 
+                            rel="noreferrer"
+                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-500/10 flex items-center gap-1.5 transition"
+                          >
+                            <FileText size={14} /> View Resume
+                          </a>
+                        ) : (
+                          <button 
+                            onClick={() => setActiveTab("resume")}
+                            className="px-4 py-2 border border-dashed border-blue-500/40 text-blue-500 hover:bg-blue-600/5 rounded-xl text-xs font-bold transition"
+                          >
+                            + Upload Resume
+                          </button>
+                        )}
+                        <button 
+                          onClick={handleShare}
+                          className={`p-2.5 border rounded-xl hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-405 transition`}
+                        >
+                          <Share2 size={14} />
+                        </button>
+                      </div>
+
+                    </div>
+                  </div>
+                </div>
+
+                {/* Info Split Columns */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Left Aspiration Summary */}
+                  <div className={`p-6 rounded-2xl border flex flex-col justify-between ${
                     isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
                   }`}>
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Sparkles className="text-blue-600" size={18} />
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Professional Aspiration</h3>
+                      </div>
                       <div>
-                        <h4 className="text-base font-bold font-outfit">Deployment Metrics Analytics</h4>
-                        <p className="text-xs text-slate-500">Average response times & success distributions</p>
+                        <p className="text-xs text-slate-400">Target Role</p>
+                        <p className="text-sm font-bold mt-1">{profile.aspiration || "Not Specified"}</p>
                       </div>
-                      <div className="flex gap-2">
-                        <span className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"/>Average</span>
-                        <span className="flex items-center gap-1.5 text-xs text-slate-500"><span className="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block"/>Peak load</span>
+                      <div>
+                        <p className="text-xs text-slate-450">Motivation</p>
+                        <p className="text-xs mt-1 leading-relaxed text-slate-500">{profile.motivation || "Not Specified"}</p>
                       </div>
                     </div>
+                    
+                    <button 
+                      onClick={() => setActiveTab("aspirations")}
+                      className="mt-6 w-full py-2.5 bg-blue-600/10 hover:bg-blue-600/20 text-blue-500 font-semibold rounded-xl text-xs transition"
+                    >
+                      Update Aspirations
+                    </button>
+                  </div>
 
-                    {/* SVG Analytics Chart Representation */}
-                    <div className="w-full h-48 flex items-end">
-                      <svg className="w-full h-full" viewBox="0 0 500 150">
-                        {/* Grids */}
-                        <line x1="0" y1="30" x2="500" y2="30" stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} strokeDasharray="3"/>
-                        <line x1="0" y1="75" x2="500" y2="75" stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} strokeDasharray="3"/>
-                        <line x1="0" y1="120" x2="500" y2="120" stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} strokeDasharray="3"/>
-                        
-                        {/* Area Gradient Blue */}
-                        <path d="M0,150 L0,120 L71,110 L142,80 L213,95 L284,50 L355,70 L426,45 L500,30 L500,150 Z" fill="url(#blue-area)" opacity="0.15"/>
-                        {/* Line Blue */}
-                        <path d="M0,120 L71,110 L142,80 L213,95 L284,50 L355,70 L426,45 L500,30" fill="none" stroke="#2563EB" strokeWidth="3" strokeLinecap="round"/>
-                        
-                        {/* Line Purple */}
-                        <path d="M0,140 L71,130 L142,110 L213,85 L284,70 L355,55 L426,30 L500,15" fill="none" stroke="#7C3AED" strokeWidth="2" strokeDasharray="4" strokeLinecap="round"/>
-                        
-                        <defs>
-                          <linearGradient id="blue-area" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#2563EB" stopOpacity="1"/>
-                            <stop offset="100%" stopColor="#2563EB" stopOpacity="0"/>
-                          </linearGradient>
-                        </defs>
-                      </svg>
+                  {/* Middle Skills Box */}
+                  <div className={`p-6 rounded-2xl border ${
+                    isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
+                  }`}>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Brain className="text-blue-600" size={18} />
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Skills & Expertise</h3>
                     </div>
-
-                    <div className="flex items-center justify-between border-t dark:border-slate-800 pt-4 mt-4 text-[10px] text-slate-500 font-semibold">
-                      <span>MON</span>
-                      <span>TUE</span>
-                      <span>WED</span>
-                      <span>THU</span>
-                      <span>FRI</span>
-                      <span>SAT</span>
-                      <span>SUN</span>
+                    <div className="flex flex-wrap gap-2">
+                      {profile.skills.length > 0 ? (
+                        profile.skills.map((skill) => (
+                          <span 
+                            key={skill}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-semibold border ${
+                              isDarkMode ? "border-slate-800 bg-slate-950 text-slate-400" : "border-slate-200 bg-slate-100 text-slate-650"
+                            }`}
+                          >
+                            {skill}
+                          </span>
+                        ))
+                      ) : (
+                        <p className="text-xs text-slate-505">No skills selected. Customize in settings.</p>
+                      )}
                     </div>
                   </div>
 
-                  {/* API Donut Chart (Right Col - Spans 1) */}
+                  {/* Right Qualifications Box */}
                   <div className={`p-6 rounded-2xl border flex flex-col justify-between ${
                     isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
                   }`}>
                     <div>
-                      <h4 className="text-base font-bold font-outfit">Resource Partition</h4>
-                      <p className="text-xs text-slate-500">Resource capacity load metrics</p>
-                    </div>
-
-                    {/* Donut Chart representation */}
-                    <div className="flex items-center justify-center py-4 relative">
-                      <svg width="120" height="120" viewBox="0 0 36 36" className="rotate-[-90deg]">
-                        <circle cx="18" cy="18" r="15.915" fill="none" stroke={isDarkMode ? "#1e293b" : "#f1f5f9"} strokeWidth="3"/>
-                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#2563EB" strokeWidth="3" strokeDasharray="45 55" strokeDashoffset="100"/>
-                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#7C3AED" strokeWidth="3" strokeDasharray="30 70" strokeDashoffset="55"/>
-                        <circle cx="18" cy="18" r="15.915" fill="none" stroke="#22C55E" strokeWidth="3" strokeDasharray="25 75" strokeDashoffset="25"/>
-                      </svg>
-                      <div className="absolute text-center">
-                        <p className="text-xs text-slate-500 uppercase tracking-wider font-bold">Allocated</p>
-                        <p className="text-xl font-bold font-outfit">84.2%</p>
+                      <div className="flex items-center gap-2 mb-4">
+                        <Award className="text-blue-600" size={18} />
+                        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-400">Verified Qualifications</h3>
                       </div>
-                    </div>
-
-                    {/* Legend */}
-                    <div className="space-y-1.5 text-xs text-slate-500">
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"/>Compute Instance</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-350">45%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-purple-600 inline-block"/>Static Storage</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-350">30%</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="flex items-center gap-2"><span className="w-2.5 h-2.5 rounded-full bg-green-500 inline-block"/>Database Cache</span>
-                        <span className="font-bold text-slate-700 dark:text-slate-350">25%</span>
-                      </div>
-                    </div>
-                  </div>
-                </section>
-
-                {/* 3. RECENT PROJECTS & ACTIVITY SPLIT */}
-                <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  
-                  {/* Recent Projects Table (Left Col - Spans 2) */}
-                  <div className={`p-6 rounded-2xl border lg:col-span-2 overflow-x-auto ${
-                    isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
-                  }`}>
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h4 className="text-base font-bold font-outfit">Recent Active Projects</h4>
-                        <p className="text-xs text-slate-500">Staged repositories and deployment statuses</p>
-                      </div>
-                      <button className={`p-2 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400`}>
-                        <MoreHorizontal size={18} />
-                      </button>
-                    </div>
-
-                    <table className="w-full text-left text-xs border-collapse">
-                      <thead>
-                        <tr className="border-b dark:border-slate-800 text-slate-400 font-semibold">
-                          <th className="pb-3 pr-4">Project Name</th>
-                          <th className="pb-3 pr-4">Framework</th>
-                          <th className="pb-3 pr-4">Status</th>
-                          <th className="pb-3 text-right">Commit Time</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y dark:divide-slate-800/60">
-                        {[
-                          { name: "Fluxora Dashboard Canvas", framework: "Next.js + Tailwind", status: "Success", time: "2 mins ago" },
-                          { name: "Job Scraper Microservice", framework: "Node.js + Puppeteer", status: "Running", time: "1 hr ago" },
-                          { name: "AI Resume Analyzer", framework: "Python + Gemini", status: "Failed", time: "Yesterday" }
-                        ].map((row, idx) => (
-                          <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-850/40 transition-colors">
-                            <td className="py-3.5 pr-4 font-bold text-slate-800 dark:text-slate-200">{row.name}</td>
-                            <td className="py-3.5 pr-4 text-slate-500">{row.framework}</td>
-                            <td className="py-3.5 pr-4">
-                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
-                                row.status === "Success" 
-                                  ? "bg-green-500/10 text-green-500 border border-green-500/20" 
-                                  : row.status === "Failed" 
-                                  ? "bg-red-500/10 text-red-500 border border-red-500/20" 
-                                  : "bg-blue-500/10 text-blue-600 border border-blue-600/20"
-                              }`}>
-                                {row.status === "Success" && <CheckCircle2 size={10} />}
-                                {row.status === "Failed" && <XCircle size={10} />}
-                                {row.status === "Running" && <Activity size={10} className="animate-pulse" />}
-                                {row.status}
-                              </span>
-                            </td>
-                            <td className="py-3.5 text-right text-slate-500 font-mono">{row.time}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  {/* Activity Timeline & Team (Right Col - Spans 1) */}
-                  <div className={`p-6 rounded-2xl border flex flex-col gap-6 ${
-                    isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
-                  }`}>
-                    
-                    {/* Team Members */}
-                    <div>
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Core Team</h4>
-                      {/*we have to make this As per the Assigned Projects*/ }
                       <div className="space-y-3">
-                        {[
-                          { name: "Abhishek Chauhan", role: "Principal Engineer", online: true },
-                          { name: "Clara Smith", role: "AI Researcher", online: true },
-                          { name: "Marcus Doe", role: "Product Designer", online: false }
-                        ].map((member, i) => (
-                          <div key={i} className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="relative w-8 h-8 rounded-full bg-blue-600/10 border border-blue-600/20 flex items-center justify-center font-bold text-xs text-blue-600">
-                                {member.name.charAt(0)}
-                                {member.online && (
-                                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-500 border-2 border-white dark:border-slate-900 rounded-full" />
-                                )}
-                              </div>
-                              <div className="text-left">
-                                <p className="text-xs font-bold leading-tight">{member.name}</p>
-                                <p className="text-[10px] text-slate-500 leading-none">{member.role}</p>
-                              </div>
-                            </div>
-                            <span className="text-[10px] text-slate-500 font-semibold">{member.online ? "Online" : "Away"}</span>
+                        {(profile.certificates || []).slice(0, 3).map((cert, index) => (
+                          <div key={index} className="flex justify-between items-center text-xs p-2.5 rounded-lg bg-slate-100/50 dark:bg-slate-950/20 border dark:border-slate-800">
+                            <span className="font-bold text-slate-850 dark:text-zinc-200">{cert.name}</span>
+                            <a href={cert.url} target="_blank" rel="noreferrer" className="text-blue-600 text-[10px] hover:underline flex items-center gap-0.5">
+                              Verify <ExternalLink size={10} />
+                            </a>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    {/* Timeline */}
-                    <div className="border-t dark:border-slate-800 pt-4">
-                      <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Recent Events</h4>
-                      <div className="space-y-3 relative before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-200 dark:before:bg-slate-800 pl-6">
-                        {[
-                          { title: "Deployed to production", desc: "Production pipeline completed successfully", time: "10m ago", icon: CheckCircle2, color: "text-green-500" },
-                          { title: "API quota threshold", desc: "API usage reached 98.4%", time: "1h ago", icon: AlertTriangle, color: "text-red-500" }
-                        ].map((evt, i) => (
-                          <div key={i} className="relative text-left">
-                            <div className="absolute -left-[29px] top-0.5 p-0.5 rounded-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800">
-                              <evt.icon size={11} className={evt.color} />
-                            </div>
-                            <p className="text-xs font-bold leading-tight">{evt.title}</p>
-                            <p className="text-[10px] text-slate-500 mt-0.5 leading-tight">{evt.desc}</p>
-                            <span className="text-[9px] font-mono text-slate-500 block mt-1">{evt.time}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                  </div>
-                </section>
-              </>
-            )}
-
-            {/* TAB: ANALYTICS SPACE (Details / Dynamic Interactive Charts) */}
-            {activeTab === "analytics" && (
-              <section className={`p-6 rounded-2xl border ${
-                isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
-              }`}>
-                <h3 className="text-lg font-bold font-outfit mb-4 text-blue-600">Enterprise Metrics & Integration Tools</h3>
-                <p className="text-sm text-slate-500 mb-6">Verify system configurations, manage tokens, and view interactive load curves.</p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Left Controls Card */}
-                  <div className={`p-5 rounded-xl border ${
-                    isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                  }`}>
-                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Quick Actions Gateway</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button className="flex items-center justify-center gap-2 p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow transition-all active:scale-[0.98]">
-                        <Zap size={14} /> Deploy Branch
-                      </button>
-                      <button className="flex items-center justify-center gap-2 p-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl text-xs font-semibold shadow transition-all active:scale-[0.98]">
-                        <Plus size={14} /> Add Project
-                      </button>
-                      <button className={`flex items-center justify-center gap-2 p-3 border rounded-xl text-xs font-semibold transition ${
-                        isDarkMode ? "border-slate-800 hover:bg-slate-900" : "border-slate-200 hover:bg-slate-100"
-                      }`}>
-                        Invite Member
-                      </button>
-                      <button className={`flex items-center justify-center gap-2 p-3 border rounded-xl text-xs font-semibold transition ${
-                        isDarkMode ? "border-slate-800 hover:bg-slate-900" : "border-slate-200 hover:bg-slate-100"
-                      }`}>
-                        API Manager
-                      </button>
-                    </div>
+                    <button 
+                      onClick={() => setActiveTab("resume")}
+                      className="mt-6 w-full py-2.5 border dark:border-slate-800 text-slate-600 hover:bg-slate-55 dark:hover:bg-slate-900 dark:text-slate-400 font-semibold rounded-xl text-xs transition"
+                    >
+                      Manage Qualifications
+                    </button>
                   </div>
 
-                  {/* Right Status Card */}
-                  <div className={`p-5 rounded-xl border ${
-                    isDarkMode ? "bg-slate-950 border-slate-800" : "bg-slate-50 border-slate-200"
-                  }`}>
-                   
-                    <div className="space-y-3 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span>Database Server</span>
-                        <span className="font-bold text-green-500">Connected</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>SMTP Service</span>
-                        <span className="font-bold text-green-500">Operational</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Storage Bucket</span>
-                        <span className="font-bold text-amber-500">84.2% Capacity</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>Google OAuth Endpoint</span>
-                        <span className="font-bold text-green-500">Configured</span>
-                      </div>
-                    </div>
-                  </div>
                 </div>
-              </section>
+
+              </div>
             )}
 
-            {/* TAB: QUALIFICATIONS (Certificates & Resume) */}
-            {activeTab === "credentials" && (
-              <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* TAB 2: EDIT PROFILE */}
+            {activeTab === "edit" && (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
                 
-                {/* Resume Upload Column */}
+                {/* General Info edit form */}
+                <div className={`p-6 rounded-2xl border lg:col-span-2 ${
+                  isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
+                }`}>
+                  <h3 className="text-base font-bold font-outfit mb-4">Edit Profile details</h3>
+                  
+                  <form onSubmit={handleSaveGeneral} className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-500 uppercase">Username / Full Name</label>
+                      <input 
+                        name="name" 
+                        value={form.name} 
+                        onChange={handleInputChange} 
+                        className={`p-2.5 rounded-lg border ${
+                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+                        }`} 
+                        required
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-500 uppercase">Location</label>
+                      <input 
+                        name="location" 
+                        value={form.location} 
+                        onChange={handleInputChange} 
+                        className={`p-2.5 rounded-lg border ${
+                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+                        }`} 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-500 uppercase">GitHub Profile URL</label>
+                      <input 
+                        name="github" 
+                        value={form.github} 
+                        onChange={handleInputChange} 
+                        className={`p-2.5 rounded-lg border ${
+                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+                        }`} 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-500 uppercase">LinkedIn Profile URL</label>
+                      <input 
+                        name="linkedin" 
+                        value={form.linkedin} 
+                        onChange={handleInputChange} 
+                        className={`p-2.5 rounded-lg border ${
+                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+                        }`} 
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5 md:col-span-2">
+                      <label className="font-bold text-slate-500 uppercase">Biography</label>
+                      <textarea 
+                        name="bio" 
+                        value={form.bio} 
+                        onChange={handleInputChange} 
+                        rows="3"
+                        className={`p-2.5 rounded-lg border w-full resize-none ${
+                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+                        }`} 
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 flex gap-2 justify-end mt-2">
+                      <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-lg shadow-blue-500/10">
+                        Save Changes
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Profile Picture Uploader & Skill tags */}
+                <div className="flex flex-col gap-6">
+                  
+                  {/* Photo Edit */}
+                  <div className={`p-6 rounded-2xl border ${
+                    isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
+                  }`}>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Profile Photo</h4>
+                    
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="w-20 h-20 rounded-full overflow-hidden bg-slate-800 border-2 border-blue-600">
+                        {profile.avatar ? (
+                          <img src={profile.avatar} alt="Avatar" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center font-bold text-2xl text-slate-350">
+                            {profile.name.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+
+                      <button 
+                        onClick={() => setShowAvatarUpload(!showAvatarUpload)}
+                        className="px-3.5 py-1.5 border border-dashed text-xs rounded-xl font-semibold hover:bg-slate-100 dark:hover:bg-slate-900 text-blue-500"
+                      >
+                        {showAvatarUpload ? "Cancel Upload" : "Upload New Photo"}
+                      </button>
+
+                      {showAvatarUpload && (
+                        <div className="w-full animate-in fade-in duration-200">
+                          <FileUpload 
+                            accept=".png,.jpg,.jpeg,.webp"
+                            label="Click to upload profile photo"
+                            allowedTypesText="Supports PNG, JPG, or WEBP up to 2MB"
+                            onUploadSuccess={(url) => {
+                              const updated = { ...profile, avatar: url };
+                              saveProfile(updated);
+                              setForm(updated);
+                              setShowAvatarUpload(false);
+                              toast.success("Profile photo updated successfully!");
+                            }} 
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Skills selectors */}
+                  <div className={`p-6 rounded-2xl border flex flex-col gap-4 ${
+                    isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
+                  }`}>
+                    <div>
+                      <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Skills & Tech Stack</h4>
+                      <p className="text-[10px] text-slate-500 mt-1">Select your skills to update your profile</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      {SKILL_OPTIONS.map((skill) => {
+                        const isActive = profile.skills.includes(skill);
+                        return (
+                          <button
+                            key={skill}
+                            onClick={() => handleSkillToggle(skill)}
+                            className={`px-3 py-1.5 rounded-xl text-[11px] font-semibold border transition ${
+                              isActive 
+                                ? "bg-blue-600 text-white border-blue-600 shadow" 
+                                : isDarkMode 
+                                ? "border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700" 
+                                : "border-slate-200 bg-white text-slate-650 hover:border-slate-300"
+                            }`}
+                          >
+                            {skill}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: RESUME & QUALIFICATIONS */}
+            {activeTab === "resume" && (
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
+                
+                {/* Resume Upload Panel */}
                 <div className={`p-6 rounded-2xl border lg:col-span-2 flex flex-col gap-5 ${
                   isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
                 }`}>
                   <div>
-                    <h4 className="text-base font-bold font-outfit">Resume Document Portfolio</h4>
-                    <p className="text-xs text-slate-500 mt-1">Stage and upload your resume for ATS-optimization and profile sync</p>
+                    <h4 className="text-base font-bold font-outfit">Student Resume Upload</h4>
+                    <p className="text-xs text-slate-500 mt-1">Stage and link your PDF/DOCX resume to apply for projects and opportunities</p>
                   </div>
 
-                  <div className="flex items-center justify-between p-4 rounded-xl border dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/40">
+                  <div className="flex items-center justify-between p-4 rounded-xl border dark:border-slate-800 bg-slate-55/50 dark:bg-slate-950/40">
                     <div className="flex items-center gap-3">
                       <div className="p-2.5 rounded-lg bg-blue-600/10 border border-blue-600/20 text-blue-600">
                         <FileText size={18} />
                       </div>
                       <div className="text-left">
-                        <p className="text-xs font-bold leading-tight">Current Portfolio Resume</p>
-                        <p className="text-[10px] text-slate-500 leading-none mt-1 truncate max-w-[280px]">
+                        <p className="text-xs font-bold leading-tight">Link File Resume</p>
+                        <p className="text-[10px] text-slate-505 leading-none mt-1 truncate max-w-[280px]">
                           {profile.resume ? profile.resume : "No document linked yet."}
                         </p>
                       </div>
                     </div>
                     {profile.resume && (
                       <a href={profile.resume} target="_blank" rel="noreferrer" className="text-blue-600 text-xs font-semibold hover:underline flex items-center gap-1">
-                        View <ExternalLink size={12} />
+                        View File <ExternalLink size={12} />
                       </a>
                     )}
                   </div>
@@ -776,7 +889,7 @@ export default function Dashboard() {
                   </button>
 
                   {showResumeUpload && (
-                    <div className="p-4 rounded-xl border border-dashed dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/20 animate-in fade-in duration-200">
+                    <div className="p-4 rounded-xl border border-dashed dark:border-slate-800 bg-slate-55/50 dark:bg-slate-955/20 animate-in fade-in duration-200">
                       <FileUpload onUploadSuccess={(url) => {
                         const updated = { ...profile, resume: url };
                         saveProfile(updated);
@@ -788,13 +901,13 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* Certificates Column */}
+                {/* Certificates Builder */}
                 <div className={`p-6 rounded-2xl border flex flex-col gap-4 ${
                   isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
                 }`}>
                   <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Qualifications</h4>
-                    <p className="text-xs text-slate-500 mt-1">Manage verify credentials</p>
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Credentials & Awards</h4>
+                    <p className="text-xs text-slate-500 mt-1">Manage verified certificates</p>
                   </div>
 
                   {/* Certifications Map */}
@@ -848,122 +961,198 @@ export default function Dashboard() {
               </section>
             )}
 
-            {/* TAB: PROFILE & SETTINGS */}
-            {activeTab === "profile" && (
-              <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* TAB 4: CAREER ASPIRATIONS */}
+            {activeTab === "aspirations" && (
+              <section className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-300">
                 
-                {/* Edit General Info (Left Col - Spans 2) */}
+                {/* Aspirations configuration form */}
                 <div className={`p-6 rounded-2xl border lg:col-span-2 ${
                   isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
                 }`}>
-                  <h4 className="text-base font-bold font-outfit mb-4">Edit Profile Metadata</h4>
+                  <h3 className="text-base font-bold font-outfit mb-4">Professional Aspirations</h3>
                   
-                  <form onSubmit={handleSaveGeneral} className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs">
+                  <form onSubmit={handleSaveGeneral} className="space-y-5 text-xs">
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-bold text-slate-500 uppercase">Username / Full Name</label>
+                      <label className="font-bold text-slate-500 uppercase">Field of Aspiration / Target Role</label>
                       <input 
-                        name="name" 
-                        value={form.name} 
+                        name="aspiration" 
+                        value={form.aspiration} 
                         onChange={handleInputChange} 
+                        placeholder="e.g. Full Stack Developer, AI Researcher, UI/UX Architect"
+                        className={`p-2.5 rounded-lg border ${
+                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
+                        }`} 
+                        required
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-500 uppercase">Dream Companies to Work For</label>
+                      <input 
+                        name="dreamCompany" 
+                        value={form.dreamCompany} 
+                        onChange={handleInputChange} 
+                        placeholder="e.g. Vercel, Stripe, Google, OpenAI"
                         className={`p-2.5 rounded-lg border ${
                           isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
                         }`} 
                       />
                     </div>
+
                     <div className="flex flex-col gap-1.5">
-                      <label className="font-bold text-slate-500 uppercase">Location</label>
-                      <input 
-                        name="location" 
-                        value={form.location} 
-                        onChange={handleInputChange} 
-                        className={`p-2.5 rounded-lg border ${
-                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
-                        }`} 
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-bold text-slate-500 uppercase">GitHub Profile URL</label>
-                      <input 
-                        name="github" 
-                        value={form.github} 
-                        onChange={handleInputChange} 
-                        className={`p-2.5 rounded-lg border ${
-                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
-                        }`} 
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="font-bold text-slate-500 uppercase">LinkedIn Profile URL</label>
-                      <input 
-                        name="linkedin" 
-                        value={form.linkedin} 
-                        onChange={handleInputChange} 
-                        className={`p-2.5 rounded-lg border ${
-                          isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
-                        }`} 
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5 md:col-span-2">
-                      <label className="font-bold text-slate-500 uppercase">Biography</label>
+                      <label className="font-bold text-slate-500 uppercase">Career Goals (2-Year Horizon)</label>
                       <textarea 
-                        name="bio" 
-                        value={form.bio} 
+                        name="careerGoals" 
+                        value={form.careerGoals} 
                         onChange={handleInputChange} 
                         rows="3"
+                        placeholder="Where do you see yourself in 2 years..."
                         className={`p-2.5 rounded-lg border w-full resize-none ${
                           isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
                         }`} 
                       />
                     </div>
-                    <div className="flex flex-col gap-1.5 md:col-span-2">
-                      <label className="font-bold text-slate-500 uppercase">Motivation</label>
+
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-500 uppercase">Career Motivation Statement</label>
                       <textarea 
                         name="motivation" 
                         value={form.motivation} 
                         onChange={handleInputChange} 
-                        rows="2"
+                        rows="3"
+                        placeholder="Describe what drives your passion for technology and code..."
                         className={`p-2.5 rounded-lg border w-full resize-none ${
                           isDarkMode ? "bg-slate-900 border-slate-800 text-white" : "bg-white border-slate-200 text-slate-900"
                         }`} 
                       />
                     </div>
 
-                    <div className="md:col-span-2 flex gap-2 justify-end mt-2">
-                      <button type="submit" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold">Save Settings</button>
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button type="submit" className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-lg shadow-blue-500/10">
+                        Save Aspirations
+                      </button>
                     </div>
                   </form>
                 </div>
 
-                {/* Skills configuration (Right Col - Spans 1) */}
-                <div className={`p-6 rounded-2xl border flex flex-col gap-4 ${
+                {/* Visual Aspiration summary block */}
+                <div className={`p-6 rounded-2xl border flex flex-col justify-between ${
                   isDarkMode ? "bg-slate-900/40 border-slate-800" : "bg-white border-slate-200"
                 }`}>
-                  <div>
-                    <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Interests & Skills</h4>
-                    <p className="text-xs text-slate-500 mt-1">Select topics to spotlight on your profile</p>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
-                    {SKILL_OPTIONS.map((skill) => {
-                      const isActive = profile.skills.includes(skill);
-                      return (
-                        <button
-                          key={skill}
-                          onClick={() => handleSkillToggle(skill)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition ${
-                            isActive 
-                              ? "bg-blue-600 text-white border-blue-600 shadow" 
-                              : isDarkMode 
-                              ? "border-slate-800 bg-slate-950 text-slate-400 hover:border-slate-700" 
-                              : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-                          }`}
-                        >
-                          {skill}
-                        </button>
-                      );
-                    })}
+                  <div className="space-y-4">
+                    <h4 className="text-sm font-bold uppercase tracking-wider text-slate-500">Live Profile Sync</h4>
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      Aspirations and target roles help us match you with startups looking for projects matching your skill profiles and career direction.
+                    </p>
+                    
+                    <div className="border-t dark:border-slate-800 pt-4 space-y-3 text-xs">
+                      <div>
+                        <span className="text-slate-500">Aspiration Status:</span>
+                        <span className={`ml-2 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          profile.aspiration ? "bg-green-500/10 text-green-500" : "bg-amber-500/10 text-amber-500"
+                        }`}>
+                          {profile.aspiration ? "Active & Indexed" : "Pending Detail Setup"}
+                        </span>
+                      </div>
+                      
+                      {profile.dreamCompany && (
+                        <div>
+                          <span className="text-slate-505">Dream Target:</span>
+                          <span className="ml-2 font-bold">{profile.dreamCompany}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
+
+              </section>
+            )}
+
+            {/* TAB 5: MY COLLABORATIONS */}
+            {activeTab === "workspaces" && (
+              <section className="space-y-6 animate-in fade-in duration-300">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className="text-xl font-bold font-outfit text-slate-800 dark:text-zinc-50">Active Project Workspaces</h3>
+                  
+                    <p className="text-xs text-slate-500 mt-1">Review active collaborations and live milestone status.</p>
+                  </div>
+                  
+                  {selectedWorkspaceId && (
+                    <button
+                      onClick={() => setSelectedWorkspaceId(null)}
+                      className={`px-4 py-2 border rounded-xl text-xs font-semibold transition ${
+                        isDarkMode ? "border-slate-800 bg-slate-900 text-slate-350" : "border-slate-200 bg-white text-slate-650"
+                      }`}
+                    >
+                     {} Back to list
+                    </button>
+                  )}
+                </div>
+
+                {loadingWorkspaces ? (
+                  <div className="flex items-center justify-center py-20">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : activeWorkspaces.length === 0 ? (
+                  <div className="text-center py-20 text-slate-400 border border-dashed dark:border-slate-800 rounded-2xl bg-slate-900/10">
+                    You have no active project collaborations yet. Browse matching projects on the platform!
+                  </div>
+                ) : selectedWorkspaceId ? (
+                  (() => {
+                    const ws = activeWorkspaces.find(w => w._id === selectedWorkspaceId);
+                    return ws ? (
+                      <ActiveWorkSpace
+                        project={ws}
+                        token={token}
+                        backendUrl={base}
+                      />
+                    ) : null;
+                  })()
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {activeWorkspaces.map(ws => (
+                      <div
+                        key={ws._id}
+                        onClick={() => setSelectedWorkspaceId(ws._id)}
+                        className={`p-6 border rounded-2xl cursor-pointer transition-all hover:scale-[1.01] flex flex-col justify-between min-h-[200px] ${
+                          isDarkMode 
+                            ? "bg-slate-900/40 border-slate-800 hover:border-blue-500/60" 
+                            : "bg-white border-slate-200 hover:border-blue-500"
+                        }`}
+                      >
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <h4 className="font-extrabold font-outfit text-base text-slate-800 dark:text-zinc-150">{ws.title}</h4>
+                              <p className="text-[11px] text-slate-400 mt-1 flex items-center gap-1.5">
+                                <span className="font-semibold text-slate-350">{ws.stipend}</span>
+                                <span className="w-1 h-1 rounded-full bg-slate-600" />
+                                <span>{ws.duration}</span>
+                              </p>
+                            </div>
+                            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-600/10 text-blue-500 border border-blue-600/20">
+                              ACTIVE WORK
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{ws.description}</p>
+                        </div>
+
+                        <div className="border-t dark:border-slate-800/60 pt-4 mt-4 flex items-center gap-2">
+                          <img
+                            src={ws.startupId?.avatar || "https://randomuser.me/api/portraits/lego/1.jpg"}
+                            className="w-7 h-7 rounded-full border border-slate-800"
+                            alt=""
+                          />
+                          <div className="text-left">
+                            <p className="text-[10px] font-bold text-slate-350 leading-none">{ws.startupId?.companyName || ws.startupId?.name}</p>
+                            <p className="text-[9px] text-slate-500 mt-0.5 leading-none">Startup Partner</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </section>
             )}
 
@@ -971,6 +1160,7 @@ export default function Dashboard() {
         </div>
 
       </div>
+      <Chatbot />
     </div>
   );
 }

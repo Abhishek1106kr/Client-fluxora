@@ -24,11 +24,13 @@ import ResumePreparation from './pages/ResumePreparation';
 import StartupsPage from './Startups/StartupsPage';
 import StartupDetails from './Startups/StartupDetails';
 import EventsPage from './pages/Events';
+import Projects from './pages/Projects';
+import AssessmentPortal from './pages/AssessmentPortal';
 
 // DevLaunch
 import Marketplace from './devlaunch/Marketplace';
 import MilestoneDetail from './devlaunch/MilestoneDetail';
-import StartupDashboard from './devlaunch/StartupDashboard';
+import StartupDashboard from './pages/StartupDashboard';
 import DevDashboard from './devlaunch/DevDashboard';
 import ProjectDetail from './devlaunch/ProjectDetail';
 function App() {
@@ -102,6 +104,11 @@ function App() {
             <StartupDetails />
           </Layout>
         } />
+        <Route path="/projects" element={
+          <Layout>
+            <Projects />
+          </Layout>
+        } />
         <Route path="/events" element={
           <Layout>
             <EventsPage />
@@ -119,11 +126,8 @@ function App() {
             <MilestoneDetail />
           </Layout>
         } />
-        <Route path="/devlaunch/startup" element={
-          <Layout>
-            <StartupDashboard />
-          </Layout>
-        } />
+        <Route path="/startup/dashboard" element={<StartupDashboard />} />
+        <Route path="/devlaunch/startup" element={<Navigate to="/startup/dashboard" replace />} />
         <Route path="/devlaunch/dev-dashboard" element={
           <Layout>
             <DevDashboard />
@@ -132,6 +136,11 @@ function App() {
         <Route path="/devlaunch/project/:id" element={
           <Layout>
             <ProjectDetail />
+          </Layout>
+        } />
+        <Route path="/assessment-portal" element={
+          <Layout>
+            <AssessmentPortal />
           </Layout>
         } />
 

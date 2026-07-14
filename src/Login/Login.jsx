@@ -33,9 +33,17 @@ function Login() {
       const res = await axios.post(`${backendUrl}/api/auth/login`, apiObj);
 
       if (res.data.success) {
+        if (res.data.token) {
+          localStorage.setItem("token", res.data.token);
+          localStorage.setItem("authToken", res.data.token);
+        }
         setIsLoggedIn(true);
-        await getUserData();
-        navigate("/mainpage");
+        const loggedInUser = await getUserData();
+        if (loggedInUser && loggedInUser.role === "startup") {
+          navigate("/startup/dashboard");
+        } else {
+          navigate("/mainpage");
+        }
       } else {
         setErrorMessage(res.data.message || "Login failed");
       }
@@ -50,8 +58,6 @@ function Login() {
       setIsLoading(false);
     }
   }
-
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
   const handleGoogleLogin = () => {
     window.location.href = `${backendUrl}/api/auth/google`;

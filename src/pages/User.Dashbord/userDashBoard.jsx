@@ -145,13 +145,13 @@ const NAV_TABS = [
 // ─────────────────────────────────────────────
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { userData, isLoggedIn, setIsLoggedIn, setUserData } = useContext(AppContext);
+  const { userData, isLoggedIn, setIsLoggedIn, setUserData, theme, toggleTheme } = useContext(AppContext);
 
   // ── Loading / save state ──
   const [pageLoading, setPageLoading] = useState(true);
   const [saveStatus, setSaveStatus] = useState("idle"); // idle | loading | success | error
   const [logoutLoading, setLogoutLoading] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const isDarkMode = theme === "dark";
 
   // ── Profile state ──
   const [profile, setProfile] = useState({
@@ -423,7 +423,7 @@ export default function Dashboard() {
             <header
               data-testid="dashboard-header"
               className={`h-[72px] border-b flex items-center justify-between px-6 md:px-8 transition-colors duration-300 ${
-                isDarkMode ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white/80"
+                theme === "dark" ? "border-slate-800 bg-slate-950/60" : "border-slate-200 bg-white/80"
               } backdrop-blur-md sticky top-0 z-30`}
             >
               {/* Search Input */}
@@ -436,7 +436,7 @@ export default function Dashboard() {
                   placeholder="Search projects, deployments, resources..."
                   aria-label="Search dashboard"
                   className={`w-full h-11 pl-10 pr-4 rounded-xl border text-sm outline-none transition-all ${
-                    isDarkMode
+                    theme === "dark"
                       ? "bg-slate-900 border-slate-800 text-white placeholder:text-slate-600 focus:border-blue-500"
                       : "bg-slate-50 border-slate-200 text-slate-900 placeholder:text-slate-400 focus:border-blue-600"
                   }`}
@@ -450,7 +450,7 @@ export default function Dashboard() {
                   data-testid="dark-mode-toggle"
                   aria-label={isDarkMode ? "Switch to light mode" : "Switch to dark mode"}
                   aria-pressed={isDarkMode}
-                  onClick={() => setIsDarkMode(!isDarkMode)}
+                  onClick={toggleTheme}
                   className={`p-2.5 rounded-xl border transition-colors ${
                     isDarkMode ? "bg-slate-900 border-slate-800 text-yellow-400" : "bg-white border-slate-200 text-slate-600"
                   }`}

@@ -3,7 +3,7 @@ import axios from "axios";
 import { UploadCloud, FileText, X } from "lucide-react";
 import { toast } from "react-toastify";
 
-const FileUpload = ({ onUploadSuccess }) => {
+const FileUpload = ({ onUploadSuccess, accept = ".pdf,.docx", label = "Click or drag to add your resume", allowedTypesText = "Supports PDF or DOCX formats up to 5MB" }) => {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const fileInputRef = useRef(null);
@@ -29,7 +29,7 @@ const FileUpload = ({ onUploadSuccess }) => {
         const formData = new FormData();
         formData.append("file", selectedFile);
 
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5002';
       axios.post(`${backendUrl}/upload`, formData, {
             headers: {
                 "Content-Type": "multipart/form-data"
@@ -75,10 +75,10 @@ const FileUpload = ({ onUploadSuccess }) => {
                                 <UploadCloud className="h-6 w-6" />
                             </div>
                             <p className="text-sm font-semibold text-zinc-200 tracking-tight">
-                                Click or drag to add your resume
+                                {label}
                             </p>
                             <p className="text-xs text-zinc-550 mt-1.5 font-medium">
-                                Supports PDF or DOCX formats up to 5MB
+                                {allowedTypesText}
                             </p>
                         </>
                     ) : (
@@ -117,7 +117,7 @@ const FileUpload = ({ onUploadSuccess }) => {
                 <input
                     ref={fileInputRef}
                     type="file"
-                    accept=".pdf,.docx"
+                    accept={accept}
                     onChange={onFileChange}
                     className="hidden"
                 />

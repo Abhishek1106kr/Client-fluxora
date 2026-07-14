@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { Menu, X, Rocket, LogOut, LayoutDashboard, Zap, ShieldCheck } from "lucide-react";
+import { Menu, X, Rocket, LogOut, LayoutDashboard, Zap, ShieldCheck, Sun, Moon } from "lucide-react";
 import axios from "axios";
 import { AppContext } from "../context/AppContext";
 import { toast } from "react-toastify"; 
@@ -13,7 +13,7 @@ const Navbar = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { isLoggedIn, userData, setIsLoggedIn, setUserData, backendUrl } = useContext(AppContext);
+  const { isLoggedIn, userData, setIsLoggedIn, setUserData, backendUrl, theme, toggleTheme } = useContext(AppContext);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -58,20 +58,17 @@ const Navbar = () => {
     setShowDropdown(false);
   };
 
-  // const viewOptions=[
-  //   {label:"Overview Panel",value:"overview",targetPath:"/dashboard"},
-  //   {label:"All Courses",value:"allCourses",targetPath:"/courses"},
-  //   {label:"Learning Path",value:"learningPath",targetPath:"/learning-path"},
-  //   {label:"Mock Interview",value:"mockInterview",targetPath:"/mock-interview"}
-  // ]
   const navLinks = [
     { label: "Home", path: "/mainpage" },
+    //doin nothing as per now
     // { label: "DevLaunch", path: "/devlaunch" },
     { label: "Jobs", path: "/job" },
     {label:"Projects",path:"/projects"},
     { label: "Startups", path: "/startups" },
-    { label: "Interview Prep", path: "/interviewPreparation" },
-    { label: "Resume Prep", path: "/resumePreparation" },
+    
+    //for later feature
+    // { label: "Interview Prep", path: "/interviewPreparation" },
+    // { label: "Resume Prep", path: "/resumePreparation" },
   ];
 
   const isActive = (path) => {
@@ -80,7 +77,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-900 transition-all duration-200">
+    <nav className="sticky top-0 z-50 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-900 transition-all duration-200 text-zinc-900 dark:text-zinc-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
@@ -88,7 +85,7 @@ const Navbar = () => {
             <div className="flex items-center justify-center p-2 rounded-lg bg-emerald-600/10 border border-emerald-500/20 group-hover:border-emerald-500/40 transition-all">
               <Rocket size={18} className="text-emerald-500 group-hover:rotate-12 transition-transform duration-300" />
             </div>
-            <span className="font-outfit font-bold text-lg tracking-tight text-zinc-50">
+            <span className="font-outfit font-bold text-lg tracking-tight text-zinc-900 dark:text-zinc-50">
               Flux<span className="text-emerald-500">ora</span>
             </span>
           </Link>
@@ -108,8 +105,8 @@ const Navbar = () => {
                   to={link.path}
                   className={`px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                     isActive(link.path)
-                      ? "text-emerald-400 bg-emerald-500/5 font-semibold"
-                      : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50"
+                      ? "text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 font-semibold"
+                      : "text-zinc-650 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900/50"
                   }`}
                 >
                   {link.label}
@@ -126,19 +123,19 @@ const Navbar = () => {
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="flex items-center focus:outline-none"
                 >
-                  <div className="w-9 h-9 rounded-full bg-emerald-600/10 border-2 border-emerald-500/30 hover:border-emerald-500/80 text-emerald-400 font-bold flex items-center justify-center text-sm transition-all duration-200 shadow-sm">
+                  <div className="w-9 h-9 rounded-full bg-emerald-600/10 border-2 border-emerald-500/30 hover:border-emerald-500/80 text-emerald-500 dark:text-emerald-400 font-bold flex items-center justify-center text-sm transition-all duration-200 shadow-sm">
                     {userData.name.charAt(0).toUpperCase()}
                   </div>
                 </button>
 
                 {showDropdown && (
-                  <div className="absolute right-0 mt-2 w-56 bg-zinc-900 border border-zinc-800 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 z-50 transform scale-100 origin-top-right transition-all">
-                    <div className="flex items-center gap-2.5 p-2.5 border-b border-zinc-800/60 mb-1">
-                      <div className="w-9 h-9 rounded-full bg-zinc-850 text-emerald-400 font-bold flex items-center justify-center border border-zinc-800 shrink-0">
+                  <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-2xl p-1.5 flex flex-col gap-1 z-50 transform scale-100 origin-top-right transition-all">
+                    <div className="flex items-center gap-2.5 p-2.5 border-b border-zinc-200 dark:border-zinc-800/60 mb-1">
+                      <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-850 text-emerald-555 dark:text-emerald-400 font-bold flex items-center justify-center border border-zinc-200 dark:border-zinc-800 shrink-0">
                         {userData.name.charAt(0).toUpperCase()}
                       </div>
-                      <div className="min-w-0">
-                        <div className="font-semibold text-sm text-zinc-200 truncate">{userData.name}</div>
+                      <div className="min-w-0 text-left">
+                        <div className="font-semibold text-sm text-zinc-800 dark:text-zinc-200 truncate">{userData.name}</div>
                         <div className="text-xs text-zinc-500 truncate">{userData.email}</div>
                       </div>
                     </div>
@@ -146,7 +143,7 @@ const Navbar = () => {
                     {!userData.isAccountVerified && (
                       <button
                         onClick={handleSendVerifyOtp}
-                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-amber-400 hover:bg-amber-500/10 transition-colors text-left"
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-amber-655 dark:text-amber-400 hover:bg-amber-500/10 transition-colors text-left"
                       >
                         <ShieldCheck size={16} />
                         Verify Account
@@ -158,7 +155,7 @@ const Navbar = () => {
                         setShowDropdown(false);
                         navigate("/dashboard");
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors text-left"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
                     >
                       <LayoutDashboard size={16} />
                       Go to Dashboard
@@ -168,17 +165,36 @@ const Navbar = () => {
                       onClick={() => {
                         setShowDropdown(false);
                         const role = localStorage.getItem("role");
-                        navigate(role === "startup" ? "/devlaunch/startup" : "/devlaunch/dev-dashboard");
+                        navigate(role === "startup" ? "/startup/dashboard" : "/devlaunch/dev-dashboard");
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition-colors text-left"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
                     >
                       <Zap size={16} />
                       DevLaunch Hub
                     </button>
 
                     <button
+                      onClick={() => {
+                        toggleTheme();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left"
+                    >
+                      {theme === "dark" ? (
+                        <>
+                          <Sun size={16} className="text-yellow-500" />
+                          <span>Light Mode</span>
+                        </>
+                      ) : (
+                        <>
+                          <Moon size={16} className="text-indigo-500" />
+                          <span>Dark Mode</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-400 hover:bg-red-500/10 transition-colors text-left"
+                      className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-500 dark:text-red-400 hover:bg-red-500/10 transition-colors text-left"
                     >
                       <LogOut size={16} />
                       Log out
@@ -191,7 +207,7 @@ const Navbar = () => {
               <div className="flex items-center gap-2">
                 <Link
                   to="/login"
-                  className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+                  className="px-3.5 py-1.5 rounded-lg text-sm font-medium text-zinc-650 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200 transition-colors"
                 >
                   Log In
                 </Link>
@@ -202,7 +218,7 @@ const Navbar = () => {
                   Sign Up
                 </Link>
                
-                <Link to="/startupLogin" className=' px-3.5 py-1.5 text-base font-mediium opacity-80 text-zinc-400 hover:opacity-100 transition-colors hover:text-blue-200'>
+                <Link to="/startupLogin" className=' px-3.5 py-1.5 text-base font-medium opacity-80 text-zinc-650 dark:text-zinc-400 hover:opacity-100 transition-colors hover:text-blue-600 dark:hover:text-blue-200'>
                  {"|      " }Startups
                 </Link>
               </div>
@@ -214,14 +230,14 @@ const Navbar = () => {
             {isLoggedIn && userData && (
               <button
                 onClick={() => navigate("/dashboard")}
-                className="w-8 h-8 rounded-full bg-emerald-600/10 text-emerald-400 font-bold flex items-center justify-center border border-zinc-800"
+                className="w-8 h-8 rounded-full bg-emerald-600/10 text-emerald-500 dark:text-emerald-400 font-bold flex items-center justify-center border border-zinc-200 dark:border-zinc-800"
               >
                 {userData.name.charAt(0).toUpperCase()}
               </button>
             )}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="p-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900 focus:outline-none transition-colors"
+              className="p-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 focus:outline-none transition-colors"
             >
               {isOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
@@ -231,7 +247,7 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden border-t border-zinc-900 bg-zinc-950 px-4 py-3 flex flex-col gap-2">
+        <div className="md:hidden border-t border-zinc-200 dark:border-zinc-900 bg-white dark:bg-zinc-950 px-4 py-3 flex flex-col gap-2">
           {navLinks.map((link) => (
             link.dropDown ? (
               <div key={link.path} className="px-3 py-1">
@@ -247,8 +263,8 @@ const Navbar = () => {
                 onClick={() => setIsOpen(false)}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   isActive(link.path)
-                    ? "text-emerald-400 bg-emerald-500/5 font-semibold"
-                    : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900"
+                    ? "text-emerald-500 dark:text-emerald-400 bg-emerald-500/5 font-semibold"
+                    : "text-zinc-650 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900"
                 }`}
               >
                 {link.label}
@@ -256,11 +272,11 @@ const Navbar = () => {
             )
           ))}
           {!isLoggedIn && (
-            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-900">
+            <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-900">
               <Link
                 to="/login"
                 onClick={() => setIsOpen(false)}
-                className="flex items-center justify-center px-3 py-2 border border-zinc-800 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
+                className="flex items-center justify-center px-3 py-2 border border-zinc-200 dark:border-zinc-800 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-zinc-200 transition-colors"
               >
                 Log In
               </Link>
@@ -276,29 +292,49 @@ const Navbar = () => {
               Startups
               </Link>
             </div>
-            
-            
           )}
           {isLoggedIn && userData && (
-            <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-zinc-900">
+            <div className="flex flex-col gap-2 mt-2 pt-2 border-t border-zinc-200 dark:border-zinc-900">
               {!userData.isAccountVerified && (
                 <button
                   onClick={() => {
                     setIsOpen(false);
                     handleSendVerifyOtp();
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-amber-900/40 bg-amber-950/10 text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-500/10 transition-colors"
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-amber-900/40 bg-amber-950/10 text-amber-500 dark:text-amber-400 rounded-lg text-sm font-medium hover:bg-amber-500/10 transition-colors"
                 >
                   <ShieldCheck size={16} />
                   Verify Account
                 </button>
               )}
+
+              {/* Mobile Theme Toggle */}
+              <button
+                onClick={() => {
+                  toggleTheme();
+                  setIsOpen(false);
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-350 rounded-lg text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              >
+                {theme === "dark" ? (
+                  <>
+                    <Sun size={16} className="text-yellow-500" />
+                    <span>Light Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon size={16} className="text-indigo-500" />
+                    <span>Dark Mode</span>
+                  </>
+                )}
+              </button>
+
               <button
                 onClick={() => {
                   setIsOpen(false);
                   handleLogout();
                 }}
-                className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-zinc-900/60 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/10 transition-colors"
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-zinc-200 dark:border-zinc-900/60 text-red-500 dark:text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/10 transition-colors"
               >
                 <LogOut size={16} />
                 Log Out
@@ -312,3 +348,4 @@ const Navbar = () => {
 };
 
 export default Navbar;
+

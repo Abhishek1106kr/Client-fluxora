@@ -10,6 +10,7 @@ export default function LoginSuccess(){
     useEffect(()=>{
         const token=searchParams.get("token");
         if(token){
+            localStorage.setItem("token",token);
             localStorage.setItem("authToken",token);
             getAuthState().then(() => {
                 navigate("/dashboard");

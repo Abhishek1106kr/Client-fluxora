@@ -11,7 +11,7 @@ export default function CareerResources() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+  const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5002';
 
   useEffect(() => {
     fetch(`${backendUrl}/api/resources/${id}`)

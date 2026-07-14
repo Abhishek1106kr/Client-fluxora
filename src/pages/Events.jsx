@@ -21,7 +21,7 @@ import InputField from "../components/ui/InputField";
 import { AppContext } from "../context/AppContext";
 
 // ── Backend URL ────────────────────────────────────────────────────────────────
-const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:5002";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function formatDate(raw) {

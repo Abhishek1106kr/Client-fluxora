@@ -7,18 +7,42 @@ export const AppContext = createContext();
 export const AppContextProvider = (props) => {
     axios.defaults.withCredentials = true;
 
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000";
+    const backendUrl = "http://localhost:5002";
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userData, setUserData] = useState(null);
 
+    const [theme, setTheme] = useState(() => {
+        const savedTheme = localStorage.getItem("theme");
+        const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        return savedTheme || (prefersDark ? "dark" : "light");
+    });
+
+    useEffect(() => {
+        document.documentElement.setAttribute("data-theme", theme);
+        if (theme === "dark") {
+            document.documentElement.classList.add("dark");
+        } else {
+            document.documentElement.classList.remove("dark");
+        }
+        localStorage.setItem("theme", theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme((prev) => (prev === "dark" ? "light" : "dark"));
+    };
+
     const getUserData = async () => {
         try {
-            const { data } = await axios.get(`${backendUrl}/api/user/data`);
+            const token = localStorage.getItem("token");
+            const { data } = await axios.get(`${backendUrl}/api/user/data`, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             if (data.success) {
                 setUserData(data.user);
                 if (data.user.role) {
                     localStorage.setItem("role", data.user.role);
                 }
+                return data.user;
             } else {
                 toast.error(data.message);
             }
@@ -29,7 +53,10 @@ export const AppContextProvider = (props) => {
 
     const getAuthState = async () => {
         try {
-            const { data } = await axios.post(`${backendUrl}/api/auth/is-Auth`);
+            const token = localStorage.getItem("token");
+            const { data } = await axios.post(`${backendUrl}/api/auth/is-Auth`, {}, {
+                headers: token ? { Authorization: `Bearer ${token}` } : {}
+            });
             if (data.success) {
                 setIsLoggedIn(true);
                 getUserData();
@@ -51,6 +78,8 @@ export const AppContextProvider = (props) => {
         setUserData,
         getUserData,
         getAuthState,
+        theme,
+        toggleTheme,
     };
 
     return (
@@ -59,3 +88,4 @@ export const AppContextProvider = (props) => {
         </AppContext.Provider>
     );
 };
+
